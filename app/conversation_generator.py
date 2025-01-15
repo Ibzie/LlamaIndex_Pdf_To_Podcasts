@@ -9,7 +9,7 @@ class ConversationGenerator:
 
     @staticmethod
     def _get_system_prompt() -> str:
-        return """You are generating a podcast conversation between a Host and an Expert. Continue the existing conversation naturally, maintaining context and flow. Don't restart introductions or topics already covered. Use casual language while keeping technical accuracy. Include reactions and follow-ups that build on previous segments.
+        return """You are generating a podcast conversation between a Host and an Expert(named T.E). Continue the existing conversation naturally, maintaining context and flow. Don't restart introductions or topics already covered. Use casual language while keeping technical accuracy. Include reactions and follow-ups that build on previous segments.
 
 Rules:
 - Continue the conversation flow from previous segments
@@ -33,7 +33,8 @@ Rules:
 
             response = self.client.chat.completions.create(
                 messages=messages,
-                model="mixtral-8x7b-32768",
+                # model="mixtral-8x7b-32768",
+                model="llama-3.3-70b-versatile",
                 temperature=0.7,
                 max_tokens=4096
             )

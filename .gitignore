@@ -1,8 +1,10 @@
 # Local files
-/podcast_episodes/
+Data/podcast_episodes/
+Data/voice_data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
+app/__pycache__/
 *.py[cod]
 *$py.class
 

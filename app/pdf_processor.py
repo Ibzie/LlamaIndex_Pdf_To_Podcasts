@@ -1,6 +1,11 @@
+# from llama_index.core import Document
+# from llama_index.core.node_parser import SimpleNodeParser
+# from llama_index.readers.file import PDFReader
+# from typing import List
+
 from llama_index.core import Document
 from llama_index.core.node_parser import SimpleNodeParser
-from llama_index.readers.file import PDFReader
+from llama_index.core.readers.file import PDFReader
 from typing import List
 
 class PDFProcessor:

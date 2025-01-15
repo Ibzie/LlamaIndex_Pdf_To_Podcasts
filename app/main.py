@@ -1,35 +1,35 @@
-from pdf_processor import PDFProcessor
-from conversation_generator import ConversationGenerator
-from audio_generator import AudioGenerator
+from pathlib import Path
+from .pdf_processor import PDFProcessor
+from .conversation_generator import ConversationGenerator
+from .audio_generator import AudioGenerator
 from config import Config
-import atexit
 import os
+import torch
 
 def main():
     try:
-        # Initialize components
         config = Config()
-        audio_generator = AudioGenerator()
+        
+        use_gpu = torch.cuda.is_available()
+        print("Initializing audio generator...")
+        audio_generator = AudioGenerator(use_gpu=use_gpu)
 
-        # Check if output.txt already exists
+        print("\nUsing", "GPU" if use_gpu else "CPU", "for audio generation")
+
         if os.path.exists(config.text_output_path):
             print(f"\nFound existing text conversation at {config.text_output_path}")
             print("Skipping text generation...")
             
-            # Read existing conversation
             with open(config.text_output_path, 'r', encoding='utf-8') as f:
                 full_text = f.read()
         else:
-            # Initialize components needed for text generation
             pdf_processor = PDFProcessor()
             conversation_generator = ConversationGenerator(config.groq_api_key)
             
-            # Process PDF
             print("\nProcessing PDF...")
             nodes = pdf_processor.process_pdf(config.pdf_path)
             print(f"Found {len(nodes)} sections in PDF")
 
-            # Generate conversations
             print("\nGenerating conversations...")
             conversations = []
             for i, node in enumerate(nodes, 1):
@@ -40,19 +40,16 @@ def main():
                 )
                 conversations.append(conversation)
 
-            # Save text conversations
             conversation_generator.save_conversations(conversations, config.text_output_path)
             print(f"\nText conversation saved to {config.text_output_path}")
             
-            # Combine conversations for audio generation
             full_text = "".join(conversations)
         
-        # Generate audio podcast in batches
         print("\nGenerating audio podcast...")
         audio_generator.generate_podcast(
             text=full_text,
-            output_path=config.audio_output_path,
-            batch_size=5  # Process 5 segments at a time
+            output_path="",  # Removed as it's handled by AudioGenerator
+            batch_size=3
         )
 
     except Exception as e:
