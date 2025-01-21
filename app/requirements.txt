@@ -1,0 +1,10 @@
+torch==2.5.1
+numpy==1.22.0
+groq==0.15.0
+TTS==0.22.0
+pydub==0.25.1
+python-dotenv==1.0.1
+llama-index
+pypdf==5.1.0
+tqdm
+networkx<3.0.0

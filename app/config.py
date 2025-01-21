@@ -14,6 +14,7 @@ class Config:
             raise ValueError("GROQ_API_KEY not found in environment variables")
         
         self.pdf_path = os.getenv("PDF_PATH", os.path.join(root_dir, "Data/input.pdf"))
+        self.refrence_audio_path = os.path.join(root_dir, "Data/reference_voices/")
         self.text_output_path = os.getenv("TEXT_OUTPUT_PATH", os.path.join(root_dir, "Data/output.txt"))
         print(f"Current file location: {Path(__file__)}")
         print(f"Root directory: {root_dir}")

@@ -1,0 +1,15 @@
+FROM nvidia/cuda:12.2.0-devel-ubuntu22.04
+
+RUN apt-get update && apt-get install -y \
+    python3.10 \
+    python3-pip \
+    ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# First install requirements without tensorrt
+COPY app/requirements.txt .
+RUN pip3 install --no-cache-dir $(cat requirements.txt | grep -v tensorrt-llm)
+
+ENV PYTHONPATH=/app

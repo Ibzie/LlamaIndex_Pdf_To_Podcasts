@@ -1,14 +1,28 @@
 from pathlib import Path
-from .pdf_processor import PDFProcessor
-from .conversation_generator import ConversationGenerator
-from .audio_generator import AudioGenerator
+from pdf_processor import PDFProcessor
+from conversation_generator import ConversationGenerator
+from audio_generator import AudioGenerator
 from config import Config
 import os
 import torch
+import time
+import asyncio
 
-def main():
+async def main():
+    start_time = time.time()
     try:
+        print("Initializing podcast generation...")
         config = Config()
+
+        current_dir = os.getcwd()
+        data_dir = os.path.join(current_dir, 'Data')
+        pdf_path = os.path.join(data_dir, 'input.pdf')
+        
+        print(f"Current directory: {current_dir}")
+        print(f"Data directory exists: {os.path.exists(data_dir)}")
+        print(f"PDF path: {pdf_path}")
+        print(f"PDF exists: {os.path.exists(pdf_path)}")
+        print(f"Data directory contents: {os.listdir(data_dir)}")
         
         use_gpu = torch.cuda.is_available()
         print("Initializing audio generator...")
@@ -27,14 +41,14 @@ def main():
             conversation_generator = ConversationGenerator(config.groq_api_key)
             
             print("\nProcessing PDF...")
-            nodes = pdf_processor.process_pdf(config.pdf_path)
+            nodes = pdf_processor.process_pdf(pdf_path)
             print(f"Found {len(nodes)} sections in PDF")
 
             print("\nGenerating conversations...")
             conversations = []
             for i, node in enumerate(nodes, 1):
                 print(f"Processing section {i}/{len(nodes)}")
-                conversation = conversation_generator.generate_conversation(
+                conversation = await conversation_generator.generate_conversation_async(
                     chunk=node.text,
                     is_first_segment=(i == 1)
                 )
@@ -48,13 +62,17 @@ def main():
         print("\nGenerating audio podcast...")
         audio_generator.generate_podcast(
             text=full_text,
-            output_path="",  # Removed as it's handled by AudioGenerator
+            output_path="",
             batch_size=3
         )
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"\nPodcast generation completed in {execution_time:.2f} seconds")
 
     except Exception as e:
         print(f"\nError: {str(e)}")
         exit(1)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
