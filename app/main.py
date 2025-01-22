@@ -1,53 +1,58 @@
 from pathlib import Path
 from pdf_processor import PDFProcessor
 from conversation_generator import ConversationGenerator
-from audio_generator import AudioGenerator
+from audio_generator import XTTSPodcastGenerator
 from config import Config
 import os
 import torch
 import time
 import asyncio
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 async def main():
     start_time = time.time()
     try:
-        print("Initializing podcast generation...")
+        logger.info("🚀 Initializing podcast generation...")
         config = Config()
 
-        current_dir = os.getcwd()
-        data_dir = os.path.join(current_dir, 'Data')
-        pdf_path = os.path.join(data_dir, 'input.pdf')
+        current_dir = Path.cwd()
+        data_dir = current_dir / 'Data'
+        pdf_path = data_dir / 'input.pdf'
+        output_dir = data_dir / 'podcast_episodes'
+        output_dir.mkdir(parents=True, exist_ok=True)
         
-        print(f"Current directory: {current_dir}")
-        print(f"Data directory exists: {os.path.exists(data_dir)}")
-        print(f"PDF path: {pdf_path}")
-        print(f"PDF exists: {os.path.exists(pdf_path)}")
-        print(f"Data directory contents: {os.listdir(data_dir)}")
+        logger.info(f"📁 Current directory: {current_dir}")
+        logger.info(f"📁 Data directory exists: {data_dir.exists()}")
+        logger.info(f"📄 PDF exists: {pdf_path.exists()}")
         
+        # Initialize XTTS generator
         use_gpu = torch.cuda.is_available()
-        print("Initializing audio generator...")
-        audio_generator = AudioGenerator(use_gpu=use_gpu)
-
-        print("\nUsing", "GPU" if use_gpu else "CPU", "for audio generation")
+        logger.info("🎵 Initializing XTTS2 generator...")
+        audio_generator = XTTSPodcastGenerator(config, use_gpu=use_gpu)
+        logger.info(f"💻 Using {'GPU' if use_gpu else 'CPU'} for audio generation")
 
         if os.path.exists(config.text_output_path):
-            print(f"\nFound existing text conversation at {config.text_output_path}")
-            print("Skipping text generation...")
-            
+            logger.info(f"📝 Found existing conversation at {config.text_output_path}")
             with open(config.text_output_path, 'r', encoding='utf-8') as f:
                 full_text = f.read()
         else:
             pdf_processor = PDFProcessor()
             conversation_generator = ConversationGenerator(config.groq_api_key)
             
-            print("\nProcessing PDF...")
+            logger.info("📚 Processing PDF...")
             nodes = pdf_processor.process_pdf(pdf_path)
-            print(f"Found {len(nodes)} sections in PDF")
+            logger.info(f"📑 Found {len(nodes)} sections in PDF")
 
-            print("\nGenerating conversations...")
+            logger.info("💭 Generating conversations...")
             conversations = []
             for i, node in enumerate(nodes, 1):
-                print(f"Processing section {i}/{len(nodes)}")
+                logger.info(f"🔄 Processing section {i}/{len(nodes)}")
                 conversation = await conversation_generator.generate_conversation_async(
                     chunk=node.text,
                     is_first_segment=(i == 1)
@@ -55,24 +60,22 @@ async def main():
                 conversations.append(conversation)
 
             conversation_generator.save_conversations(conversations, config.text_output_path)
-            print(f"\nText conversation saved to {config.text_output_path}")
-            
             full_text = "".join(conversations)
         
-        print("\nGenerating audio podcast...")
+        logger.info("🎙️ Generating audio podcast...")
+        output_path = output_dir / "podcast_output.mp3"
         audio_generator.generate_podcast(
             text=full_text,
-            output_path="",
-            batch_size=3
+            output_path=str(output_path)
         )
 
-        end_time = time.time()
-        execution_time = end_time - start_time
-        print(f"\nPodcast generation completed in {execution_time:.2f} seconds")
+        execution_time = time.time() - start_time
+        logger.info(f"✨ Completed in {execution_time:.2f} seconds")
+        logger.info(f"📁 Output saved to: {output_path}")
 
     except Exception as e:
-        print(f"\nError: {str(e)}")
-        exit(1)
+        logger.error(f"❌ Error: {str(e)}", exc_info=True)
+        raise
 
 if __name__ == "__main__":
     asyncio.run(main())
