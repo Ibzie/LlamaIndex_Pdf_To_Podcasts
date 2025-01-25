@@ -17,7 +17,7 @@ class ConversationGenerator:
     @staticmethod
     @lru_cache(maxsize=128)
     def _get_system_prompt() -> str:
-        return """You are generating a podcast conversation between a Host (Named Rachel) and an Expert(Named Kevin). The conversation should dynamically adapt tone and emotion based on context:
+        return """You are generating a podcast ONLY conversation between a Host (Named Rachel) and an Expert(Named Kevin), Do not add any additional speakers otto the conversation no matter what the context. The conversation should dynamically adapt tone and emotion based on context:
 
 Key Features:
 - Utilize varied emotional states: analytical, confident, skeptical, emphatic, curious, authoritative
@@ -32,6 +32,7 @@ Conversation Guidelines:
 - Include authoritative language when presenting expert opinions
 - Maintain emotional coherence across topic transitions
 - Reference previous points with appropriate emotional callback
+
 
 Structure:
 - Continue existing conversation flow
@@ -63,7 +64,7 @@ T.E: [Expertise-based emotional delivery]"""
 
             response = await self.client.chat.completions.create(
                 messages=messages,
-                model="llama-3.1-8b-instant",
+                model="mixtral-8x7b-32768",
                 temperature=0.7,
                 max_tokens=4096
             )

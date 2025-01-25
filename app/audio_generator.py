@@ -42,10 +42,11 @@ class XTTSPodcastGenerator:
         self.MAX_CHUNK_SIZE = 15
         self.MAX_WORKERS = 1
         self.BATCH_SIZE = 1
-        self.MAX_EPISODE_LENGTH = 11 * 60 * 1000
+        self.MAX_EPISODE_LENGTH = 1 * 60 * 1000
         
         self._conversation_pattern = re.compile(
-            r'(Host Rachel|T\.E \(Kevin\)):\s*((?:(?!Host Rachel:|T\.E \(Kevin\):).)*)'
+            r'(Host|T\.E):\s*(?:\[[\w\s]+\])?\s*((?:(?!Host:|T\.E:).)*)',
+            re.DOTALL
         )
         
         self._setup_voice_patterns()
@@ -66,7 +67,6 @@ class XTTSPodcastGenerator:
 
     def _detect_emotion(self, text: str, is_host: bool) -> str:
         text_lower = text.lower()
-        
         if '!' in text:
             return 'excited'
         elif '?' in text:
@@ -75,7 +75,6 @@ class XTTSPodcastGenerator:
             return 'serious'
         elif any(word in text_lower for word in ['absolutely', 'certainly']):
             return 'confident'
-        
         return 'neutral'
 
     def _optimize_text(self, text: str) -> List[str]:
@@ -127,10 +126,11 @@ class XTTSPodcastGenerator:
     def generate_podcast(self, text: str, output_path: str):
         try:
             matches = self._conversation_pattern.finditer(text)
-            segments = [
-                (m.group(1), ' '.join(m.group(2).strip().split()))
-                for m in matches if m.group(2).strip()
-            ]
+            segments = []
+            for m in matches:
+                if m.group(2).strip():
+                    text = re.sub(r'\[.*?\]', '', m.group(2)).strip()  # Remove emotion tags
+                    segments.append((m.group(1), ' '.join(text.split())))
             
             print(f"📊 Processing {len(segments)} segments")
             current_episode = 1
@@ -139,7 +139,7 @@ class XTTSPodcastGenerator:
             episodes_dir.mkdir(parents=True, exist_ok=True)
             
             for i, (speaker, text) in enumerate(tqdm(segments)):
-                is_host = speaker == "Host Rachel"
+                is_host = speaker == "Host"
                 emotion = self._detect_emotion(text, is_host)
                 
                 print(f"\n🎤 Processing: {speaker}")
